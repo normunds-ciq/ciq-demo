@@ -1,7 +1,7 @@
 (function() {
   setTimeout(init, 1000);
 
-  const demoItems = { 'Technical Analysis': AddStudy };
+  const demoItems = { 'Technical Analysis - Add Study (Alligator)': AddStudy };
 
   function AddStudy() {
     resetChart(stxx);
@@ -16,6 +16,9 @@
   }
 
   function initDemoMenu(demoItems) {
+    if (qs('.menu-content')) {
+      return;
+    }
     insertDemoSelectorIcon();
     addMenuContent();
 
@@ -120,7 +123,6 @@
     function positionOver(el, offset = -5) {
       const { left, top, width, height } = el.getBoundingClientRect();
 
-      console.log({ el, left, top, width, height });
       s.left = left - offset + 'px';
       s.top = top + 'px';
       s.width = width + 2 * offset + 'px';
@@ -155,7 +157,7 @@ function tap(item) {
   item.dispatchEvent(new Event('stxtap'));
 }
 
-function resetChart(chart, clearStudies) {
+function resetChart(chart, clearStudies = true) {
   const settings = {
     interval: 'day',
     periodicity: 1,
@@ -197,8 +199,9 @@ function resetChart(chart, clearStudies) {
     ]
   };
 
-  chart.importLayout(settings);
   if (clearStudies) {
     tap(qs('[stxtap="Layout.clearStudies()"]'));
   }
+
+  chart.importLayout(settings);
 }
