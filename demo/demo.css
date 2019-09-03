@@ -72,6 +72,7 @@ menu-trigger:hover {
 .demo-selection li {
   list-style: none;
   cursor: pointer;
+  margin: 8px 0;
 }
 
 .menu-pointer {
