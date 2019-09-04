@@ -1,253 +1,262 @@
-const DELAY_SEC = 1;
+// (function() {
+const DELAY_SEC = 0.8;
 
-(function() {
-  setTimeout(init, 1000);
+// configuration start
+const demoItems = [
+  {
+    hash: 'ta',
+    display: '<b>Technical Analysis</b> - Add Study (Alligator)',
+    command: AddStudy
+  },
+  { hash: 'tc', display: '<b>Tick chart</b>', command: TickChart },
+  {
+    hash: 'video_events',
+    display: '<b>Video Events</b>',
+    command: VideoEvents
+  }
+];
 
-  const demoItems = [
-    {
-      hash: 'ta',
-      display: '<b>Technical Analysis</b> - Add Study (Alligator)',
-      command: AddStudy
-    },
-    { hash: 'tc', display: '<b>Tick chart</b>', command: TickChart },
-    {
-      hash: 'videoEvents',
-      display: '<b>Video Events</b>',
-      command: VideoEvents
+let stepTime = 1;
+// let stepTime = DELAY_SEC;
+// configuration end
+
+setTimeout(init, 1000);
+
+async function AddStudy() {
+  reset();
+  await selectMenuItem('Studies', 'Alligator');
+  showPointer(false);
+}
+
+async function TickChart() {
+  reset();
+  await selectMenuItem('Display', 'Step');
+  await delay(0.02);
+  await selectMenuItem('1D', 'Tick', 0);
+  showPointer(false);
+
+  // stxx.setPeriodicity({ period: 1, timeUnit: 'tick' });
+}
+
+async function VideoEvents() {
+  reset();
+  await selectMenuItem('Events', 'Video');
+  showPointer();
+
+  const marker = qsa('.stx-marker .stx-visual')[1];
+  positionOver(marker, [-4, -4]);
+  await delay(1.1);
+  marker.click();
+  await delay(0.5);
+  showPointer(false);
+  // await selectMenuItem('1D', 'Tick');
+}
+
+let pointer, positionOver, showPointer;
+
+const commandLookup = demoItems.reduce(
+  (acc, { hash, command }) => ({ ...acc, [hash]: command }),
+  {}
+);
+
+function init() {
+  initDemoMenu();
+  initEventHandlers();
+
+  ({ pointer, positionOver, showPointer } = getMenuPointer());
+}
+
+function initEventHandlers() {
+  window.addEventListener('hashchange', execHashCommand);
+  setTimeout(execHashCommand, 500);
+
+  function execHashCommand() {
+    const [hash, ...options] = window.location.hash
+      .replace(/^#/, '')
+      .split('+');
+
+    const showSteps = !!options.find(option => option === 'show_me_how');
+    stepTime = showSteps ? DELAY_SEC : 0;
+
+    const command = commandLookup[hash];
+    if (command) {
+      command();
     }
-  ];
-
-  const commandLookup = demoItems.reduce(
-    (acc, { hash, command }) => ({ ...acc, [hash]: command }),
-    {}
-  );
-
-  async function AddStudy() {
-    reset();
-    resetChart(stxx);
-    await selectMenuItem('Studies', 'Alligator');
   }
+}
 
-  async function TickChart() {
-    reset();
-    resetChart(stxx);
-    await selectMenuItem('Display', 'Step');
-    await selectMenuItem('1D', 'Tick');
-    // stxx.setPeriodicity({ period: 1, timeUnit: 'tick' });
+function reset() {
+  selectItem(getItem('None'));
+  resetChart(stxx);
+}
+
+function initDemoMenu() {
+  if (qs('.menu-content')) {
+    return;
   }
+  insertDemoSelectorIcon();
+  addMenuContent();
+  addPeriod({
+    label: 'Tick',
+    period: 1,
+    timeUnit: 'tick',
+    prependSeparator: true
+  });
+  addVideoEvents();
 
-  async function VideoEvents() {
-    reset();
-    resetChart(stxx);
-    await selectMenuItem('Events', 'Video');
-    showPointer();
+  document.addEventListener('play', onlyOneVideoPlaying, { capture: true });
 
-    const marker = qsa('.stx-marker .stx-visual')[1];
-    positionOver(marker, [-4, -4]);
-    await delay(1.1);
-    marker.click();
-    await delay(0.5);
-    showPointer(false);
-    // await selectMenuItem('1D', 'Tick');
-  }
+  function insertDemoSelectorIcon() {
+    const iconEl = document.createElement('div');
+    iconEl.classList.add('menu-trigger');
 
-  let pointer, positionOver, showPointer;
-
-  function init() {
-    initDemoMenu();
-
-    window.addEventListener('hashchange', execHashCommand);
-    setTimeout(execHashCommand, 500);
-
-    ({ pointer, positionOver, showPointer } = getMenuPointer());
-
-    function execHashCommand() {
-      const hash = window.location.hash.replace(/^#/, '');
-      const command = commandLookup[hash];
-      if (command) {
-        command();
+    iconEl.addEventListener('click', e => {
+      e.stopPropagation();
+      const menuContent = qs('.menu-content');
+      if (menuContent) {
+        menuContent.classList.toggle('open');
       }
-    }
-  }
-
-  function reset() {
-    selectItem(getItem('None'));
-  }
-
-  function initDemoMenu() {
-    if (qs('.menu-content')) {
-      return;
-    }
-    insertDemoSelectorIcon();
-    addMenuContent();
-    addPeriod({
-      label: 'Tick',
-      period: 1,
-      timeUnit: 'tick',
-      prependSeparator: true
     });
-    addVideoEvents();
 
-    document.addEventListener('play', onlyOneVideoPlaying, { capture: true });
+    document.body.addEventListener('click', () => {
+      const menuContent = qs('.menu-content');
+      if (menuContent) {
+        menuContent.classList.remove('open');
+      }
+    });
 
-    function insertDemoSelectorIcon() {
-      const iconEl = document.createElement('div');
-      iconEl.classList.add('menu-trigger');
+    const menuEl = qs('cq-menu');
+    const navEl = qs('.ciq-nav');
+    navEl.insertBefore(iconEl, menuEl);
+  }
 
-      iconEl.addEventListener('click', e => {
-        e.stopPropagation();
-        const menuContent = qs('.menu-content');
-        if (menuContent) {
-          menuContent.classList.toggle('open');
+  function addMenuContent() {
+    const menuContent = document.createElement('div');
+    menuContent.classList.add('menu-content');
+
+    const listContent = document.createElement('div');
+    listContent.classList.add('demo-selection');
+    listContent.innerHTML = createList(demoItems);
+
+    listContent.addEventListener(
+      'click',
+      async e => {
+        const name = e.target.innerText;
+        const parentName = e.target.parentElement.innerText;
+        const cmd = demoItems[name] || demoItems[parentName];
+        menuContent.classList.remove('open');
+        await delay(0.1);
+        if (cmd) {
+          cmd();
         }
-      });
+      },
+      { capture: true }
+    );
+    menuContent.append(listContent);
 
-      document.body.addEventListener('click', () => {
-        const menuContent = qs('.menu-content');
-        if (menuContent) {
-          menuContent.classList.remove('open');
-        }
-      });
+    const contextEl = qs('cq-context');
+    const firstContextEl = contextEl.firstElementChild;
+    contextEl.insertBefore(menuContent, firstContextEl);
+  }
 
-      const menuEl = qs('cq-menu');
-      const navEl = qs('.ciq-nav');
-      navEl.insertBefore(iconEl, menuEl);
-    }
-
-    function addMenuContent() {
-      const menuContent = document.createElement('div');
-      menuContent.classList.add('menu-content');
-
-      const listContent = document.createElement('div');
-      listContent.classList.add('demo-selection');
-      listContent.innerHTML = createList(demoItems);
-
-      listContent.addEventListener(
-        'click',
-        async e => {
-          const name = e.target.innerText;
-          const parentName = e.target.parentElement.innerText;
-          const cmd = demoItems[name] || demoItems[parentName];
-          menuContent.classList.remove('open');
-          await delay(0.1);
-          if (cmd) {
-            cmd();
-          }
-        },
-        { capture: true }
-      );
-      menuContent.append(listContent);
-
-      const contextEl = qs('cq-context');
-      const firstContextEl = contextEl.firstElementChild;
-      contextEl.insertBefore(menuContent, firstContextEl);
-    }
-
-    function createList(items) {
-      return `<ul>
+  function createList(items) {
+    return `<ul>
         ${items
           .map(
-            ({ hash, display }) => `<li><a href="#${hash}">${display}</a></li>`
+            ({ hash, display }) =>
+              `<li id="${hash}"><a href="#${hash}" >${display}</a></li>`
           )
           .join('')}
       </ul>`;
-    }
-
-    function addPeriod({ label, period, timeUnit, prependSeparator }) {
-      const item = document.createElement('cq-item');
-      item.innerText = label;
-      item.addEventListener('click', () =>
-        stxx.setPeriodicity({ period: 1, timeUnit: 'tick' })
-      );
-
-      qs('.ciq-period cq-menu-dropdown').append(
-        document.createElement('cq-separator')
-      );
-      qs('.ciq-period cq-menu-dropdown').append(item);
-    }
-
-    let zIndex = 20;
-    function onlyOneVideoPlaying(e) {
-      const video = e.target;
-      video.parentElement.style.zIndex = zIndex++;
-      qsa('video')
-        .filter(v => v !== video)
-        .forEach(v => v.pause());
-    }
   }
 
-  async function selectMenuItem(menuName, itemName) {
-    const menuOffset = [-4, 0, -8, 0];
-    const menu = getMenu(menuName);
-    await delay();
+  function addPeriod({ label, period, timeUnit, prependSeparator }) {
+    const item = document.createElement('cq-item');
+    item.innerText = label;
+    item.addEventListener('click', () =>
+      stxx.setPeriodicity({ period: 1, timeUnit: 'tick' })
+    );
+
+    qs('.ciq-period cq-menu-dropdown').append(
+      document.createElement('cq-separator')
+    );
+    qs('.ciq-period cq-menu-dropdown').append(item);
+  }
+
+  let zIndex = 20;
+  function onlyOneVideoPlaying(e) {
+    const video = e.target;
+    video.parentElement.style.zIndex = zIndex++;
+
+    qsa('video')
+      .filter(v => v !== video)
+      .forEach(v => v.pause());
+  }
+}
+
+async function selectMenuItem(menuName, itemName, lastDelay = 0.2) {
+  const menuOffset = [-4, 0, -8, 0];
+  const menu = getMenu(menuName);
+  if (stepTime) {
     positionOver(menu, menuOffset);
     await delay();
     selectItem(menu);
     await delay();
-    const item = getItem(itemName);
-    positionOver(item, menuOffset);
-    await delay();
-    selectItem(item);
-    showPointer(false);
-    await delay(0.01);
-    // hide menu
+  }
+  const item = getItem(itemName);
+  positionOver(item, menuOffset);
+  await delay();
+  selectItem(item);
+  await delay(lastDelay);
+  // hide menu
+  if (stepTime) {
     selectItem(menu);
   }
-
-  function getMenu(name) {
-    const menu = qsa('cq-menu span').find(el => el.innerText === name);
-    return menu && menu.parentElement;
-  }
-
-  function getItem(name, menu) {
-    const item = qsa('cq-item', menu).find(el => el.innerText === name);
-
-    if (!item) {
-      console.log('Could not find ' + name);
-    }
-    return item;
-  }
-
-  function getMenuPointer() {
-    const pointer =
-      qs('.menu-pointer') ||
-      document.body.appendChild(document.createElement('div'));
-    const s = pointer.style;
-    const $pointer = $(pointer);
-    pointer.classList.add('menu-pointer');
-    return {
-      pointer,
-      positionOver,
-      showPointer
-    };
-    function positionOver(el, [t = 0, l = 0, w = 0, h = 0] = []) {
-      const { left, top, width, height } = el.getBoundingClientRect();
-
-      s.left = left + l + 'px';
-      s.top = top + t + 'px';
-      s.width = width + w + 'px';
-      s.height = height + h + 'px';
-      s.opacity = 1;
-      showPointer();
-    }
-    function showPointer(v = true) {
-      // s.opacity = v ? 1 : 0;
-      s.display = v ? '' : 'none';
-    }
-  }
-})();
-
-function qs(path, context) {
-  return (context || document).querySelector(path);
 }
 
-function qsa(path, context) {
-  return Array.from((context || document).querySelectorAll(path));
+function getMenu(name) {
+  const menu = qsa('cq-menu span').find(el => el.innerText === name);
+  return menu && menu.parentElement;
 }
 
-function noOp() {}
+function getItem(name, menu) {
+  const item = qsa('cq-item', menu).find(el => el.innerText === name);
 
-function delay(t = DELAY_SEC) {
+  if (!item) {
+    console.log('Could not find ' + name);
+  }
+  return item;
+}
+
+function getMenuPointer() {
+  const pointer =
+    qs('.menu-pointer') ||
+    document.body.appendChild(document.createElement('div'));
+  const s = pointer.style;
+  const $pointer = $(pointer);
+  pointer.classList.add('menu-pointer');
+  return {
+    pointer,
+    positionOver,
+    showPointer
+  };
+  function positionOver(el, [t = 0, l = 0, w = 0, h = 0] = []) {
+    const { left, top, width, height } = el.getBoundingClientRect();
+
+    s.left = `${left + l}px`;
+    s.top = `${top + t}px`;
+    s.width = `${width + w}px`;
+    s.height = `${height + h}px`;
+    s.opacity = 1;
+    showPointer();
+  }
+  function showPointer(v = true) {
+    // s.opacity = v ? 1 : 0;
+    s.display = stepTime && v ? '' : 'none';
+  }
+}
+
+function delay(t = stepTime) {
   return new Promise(resolve => setTimeout(resolve, t * 1000));
 }
 
@@ -256,10 +265,6 @@ function selectItem(item) {
   if (item.click) {
     item.click();
   }
-}
-
-function tap(item) {
-  item.dispatchEvent(new Event('stxtap'));
 }
 
 function resetChart(chart, clearStudies = true) {
@@ -305,7 +310,7 @@ function resetChart(chart, clearStudies = true) {
   };
 
   if (clearStudies) {
-    tap(qs('[stxtap="Layout.clearStudies()"]'));
+    selectItem(qs('[stxtap="Layout.clearStudies()"]'));
   }
 
   chart.importLayout(settings, { managePeriodicity: true });
@@ -433,3 +438,15 @@ function addVideoEvents() {
     return expand;
   }
 }
+
+function qs(path, context) {
+  return (context || document).querySelector(path);
+}
+
+function qsa(path, context) {
+  return Array.from((context || document).querySelectorAll(path));
+}
+
+function noOp() {}
+
+// })();

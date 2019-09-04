@@ -52,6 +52,9 @@ menu-trigger:hover {
   opacity: 0.98;
   cursor: pointer;
   transition: all 350ms;
+
+  width: 280px;
+  left: -276px;
 }
 
 .menu-content.open {
@@ -62,6 +65,7 @@ menu-trigger:hover {
   margin: 34px;
   min-height: 200px;
   /* border: solid 1px #777; */
+  margin-left: 54px;
 }
 
 .demo-selection ul {
@@ -72,11 +76,12 @@ menu-trigger:hover {
 .demo-selection li {
   list-style: none;
   cursor: pointer;
-  margin: 8px 0;
+  margin: 18px 0;
+  text-transform: uppercase;
 }
 
 .demo-selection a {
-  color: white;
+  color: #ccc;
   text-decoration: none;
 }
 
@@ -86,7 +91,7 @@ menu-trigger:hover {
   position: relative;
   z-index: 200000;
   opacity: 0;
-  transition: all 500ms;
+  transition: all 500ms cubic-bezier(0.78, -0.07, 0.21, 1.05);
 }
 
 /* video markers */

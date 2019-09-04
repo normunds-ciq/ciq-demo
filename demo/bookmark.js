@@ -30,8 +30,12 @@
 })();
 
 (function() {
-  loadStyle('https://normunds-ciq.github.io/ciq-demo/demo/demo.css');
-  loadStyle('https://normunds-ciq.github.io/ciq-demo/demo/demo.js');
+  loadStyle(
+    'https://normunds-ciq.github.io/ciq-demo/demo/demo.css?h=' + new Date()
+  );
+  loadStyle(
+    'https://normunds-ciq.github.io/ciq-demo/demo/demo.js?h=' + new Date()
+  );
 
   function loadStyle(href, callback) {
     for (let i = 0; i < document.styleSheets.length; i++) {
@@ -40,7 +44,7 @@
       }
     }
     const head = document.getElementsByTagName('head')[0];
-    const isJs = /\.js$/.test(href);
+    const isJs = /\.js\?/.test(href);
     const link = document.createElement(isJs ? 'script' : 'link');
 
     if (!isJs) {
