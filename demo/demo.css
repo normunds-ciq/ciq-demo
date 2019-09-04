@@ -15,7 +15,7 @@
   padding-right: 2px;
   -moz-transition: all 300ms;
   -webkit-transition: all 300ms;
-  transition: all 300ms;
+  transition: all 500ms;
 }
 
 .menu-trigger:before {
@@ -75,10 +75,57 @@ menu-trigger:hover {
   margin: 8px 0;
 }
 
+.demo-selection a {
+  color: white;
+  text-decoration: none;
+}
+
 .menu-pointer {
   transition: all 400ms;
-  border: solid 2px blue;
+  border: solid 4px #00d0ff;
   position: relative;
   z-index: 200000;
   opacity: 0;
+  transition: all 500ms;
+}
+
+/* video markers */
+.stx-marker .stx-marker-video {
+  width: 0;
+  max-height: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.stx-marker.square .stx-marker-video,
+.stx-marker.circle .stx-marker-video {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  text-align: left;
+  opacity: 0;
+  transition: opacity 0.5s 0s;
+}
+
+.stx-marker.highlight.square .stx-marker-video,
+.stx-marker.highlight.circle .stx-marker-video {
+  width: 300px;
+  max-height: 400px;
+  padding: 10px;
+  opacity: 1;
+}
+
+.stx-marker.callout .stx-marker-video {
+  max-height: 0;
+  transition: max-height 0s 0s;
+}
+
+.stx-marker.callout.highlight .stx-marker-video {
+  width: 200px;
+  max-height: 200px;
+  padding: 0 10px 8px;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  transition: max-height 0.5s 0s;
 }
